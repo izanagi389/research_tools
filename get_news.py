@@ -19,11 +19,11 @@ from sumy.summarizers.lex_rank import LexRankSummarizer
 def main():
     # ロギング設定
     formatter = '%(levelname)s/%(asctime)s/%(filename)s(%(lineno)s)/%(message)s '
-    logging.basicConfig(level=logging.DEBUG, format=formatter)
+    logging.basicConfig(format=formatter)
     # ニュースAPIの利用
     API_KEY = config.news_api
     # 検索キーワード・オプション
-    keywords = "化粧水"
+    keywords = "スキンケア"
     count = "100"
     sort = "publishedAt"
     # fashionsnap.com
@@ -59,7 +59,7 @@ def getNewsURl(url):
         for data in json_data["articles"]:
             if not (("collection" in data["url"]) or ("streetstyle" in data["url"])):
                 urls.append(data["url"])
-                logging.info(data["url"])
+                logging.warning(data["url"])
     else:
         # リクエストステータス表示
         logging.warning("ニュースをリクエストできませんでした：「{}」", json_data['status'])
@@ -131,7 +131,7 @@ def save_result_csv(list, name):
 
     df = pd.DataFrame(lists)
     df.to_csv('data/csv/news/' + name + '.csv', header=None, index=None)
-    logging.info("save OK! ： {}".format(name))
+    logging.warning("save OK! ： {}".format(name))
 
 
 def summary(text):

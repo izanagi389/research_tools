@@ -3,9 +3,9 @@
 研究で利用中（開発中）
 
 ### 開発環境
-・MacOS　Mojave（10.14.6）
-・Python (3.8.5)
-・pip (20.1.1)
+・MacOS　Mojave（10.14.6）  
+・Python (3.8.5)  
+・pip (20.1.1)  
 
 
 ### get_tweet.py
