@@ -13,12 +13,18 @@
 TwitterAPIを用いてツイートのタイトル、URLを取得し、csvファイルに格納  
 API_KEY、TwitterIDなどの設定などは別記ファイル（今回はdoc2vec_config.py）に記載
 
-### get_tweet.py
+### get_news.py
 
 NewsAPIを用いてキーワード検索した記事のURLを取得。  
 その後、「BeautifulSoup4」を用いて記事をスクレイピング  
 記事の内容、URLをcsvファイルに格納  
 API_KEYなどの設定などは別記ファイル（今回はconfig.py）に記載
+
+### doc2vec.py
+
+csvからテキストデータを取得し  
+「Doc2Vec」を利用し、コサイン類似度を抽出  
+設定などは別記ファイル（今回はdoc2vec_config.py）に記載
 
 ### word_movers_distance.py
 
