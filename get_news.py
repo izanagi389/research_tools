@@ -23,28 +23,42 @@ def main():
     # ニュースAPIの利用
     API_KEY = config.news_api
     # 検索キーワード・オプション
-    keywords = "スキンケア"
+    keywords = "コスメ"
     count = "100"
     sort = "publishedAt"
     # fashionsnap.com
     domains_fashionsnap = "fashionsnap.com"
     domains_yahoo = "yahoo.co.jp"
+    domains_vogue = "vogue.co.jp"
+    domains_livedoor = "livedoor.com"
     news_api_url_fashionsnap = ("https://newsapi.org/v2/everything?" + "pageSize=" + count + "&q=" +
                                 keywords + "&sortBy=" + sort + "&domains=" + domains_fashionsnap + '&apiKey=' + API_KEY)
     news_api_url_yahoo = ("https://newsapi.org/v2/everything?" + "pageSize=" + count + "&q=" +
                           keywords + "&sortBy=" + sort + "&domains=" + domains_yahoo + '&apiKey=' + API_KEY)
+    news_api_url_vogue = ("https://newsapi.org/v2/everything?" + "pageSize=" + count + "&q=" +
+                          keywords + "&sortBy=" + sort + "&domains=" + domains_vogue + '&apiKey=' + API_KEY)
+    news_api_url_livedoor = ("https://newsapi.org/v2/everything?" + "pageSize=" + count + "&q=" +
+                             keywords + "&sortBy=" + sort + "&domains=" + domains_livedoor + '&apiKey=' + API_KEY)
     # ニュースURLリストを取得
     url_list_fashionsnap = getNewsURl(news_api_url_fashionsnap)
+    url_list_vogue = getNewsURl(news_api_url_vogue)
     url_list_yahoo = getNewsURl(news_api_url_yahoo)
+    url_list_livedoor = getNewsURl(news_api_url_livedoor)
 
     result_news_fashionsnapcom_list = newsScrapingFashionsnapcom(
         url_list_fashionsnap)
     result_news_yahoo_list = newsScrapingYahoo(url_list_yahoo)
-    save_list = result_news_fashionsnapcom_list + result_news_yahoo_list
+    result_news_vogue_list = newsScrapingVogue(url_list_vogue)
+    result_news_livedoor_list = newsScrapingLivedoor(url_list_livedoor)
+
+    save_list = result_news_fashionsnapcom_list + result_news_yahoo_list + \
+        result_news_vogue_list + result_news_livedoor_list
 
     # 結果の保存
     save_result_csv(result_news_fashionsnapcom_list, "fashionsnapcom_news")
     save_result_csv(result_news_yahoo_list, "yahoo_news")
+    save_result_csv(result_news_vogue_list, "vogue_news")
+    save_result_csv(result_news_livedoor_list, "livedoor_news")
     save_result_csv(save_list, "result_news")
 
 
@@ -62,7 +76,7 @@ def getNewsURl(url):
                 logging.warning(data["url"])
     else:
         # リクエストステータス表示
-        logging.warning("ニュースをリクエストできませんでした：「{}」", json_data['status'])
+        logging.warning("ニュースをリクエストできませんでした：「{}」".format(json_data['status']))
 
     return urls
 
@@ -73,8 +87,12 @@ def newsScrapingYahoo(urls):
     result_news = []
     # ニューステキストをスクレイピング
     for url in urls:
+        # 403 Forbidden回避するためユーザーエージェント情報をのせる
+        headers = {
+            "User-Agent": config.HEADER
+        }
         # レスポンスを取得
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
         # BeautifulSoupオブジェクト生成
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -96,8 +114,12 @@ def newsScrapingFashionsnapcom(urls):
     result_news = []
     # ニューステキストをスクレイピング
     for url in urls:
+        # 403 Forbidden回避するためユーザーエージェント情報をのせる
+        headers = {
+            "User-Agent": config.HEADER
+        }
         # レスポンスを取得
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
         # BeautifulSoupオブジェクト生成
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -119,6 +141,63 @@ def newsScrapingFashionsnapcom(urls):
             result_news.append([news_content, url])
         else:
             logging.warning("「{}」の記事の内容が見つかりませんでした:".format(url))
+
+    return result_news
+
+
+def newsScrapingVogue(urls):
+    result_news = []
+    # ニューステキストをスクレイピング
+    for url in urls:
+        # 403 Forbidden回避するためユーザーエージェント情報をのせる
+        headers = {
+            "User-Agent": config.HEADER
+        }
+        # レスポンスを取得
+        response = requests.get(url, headers=headers)
+        # BeautifulSoupオブジェクト生成
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # スクレイピング結果を取得
+        # テキストが存在しない場合以外の処理
+        if soup.find(class_='MainContentWrapper-s89gjf-14') is not None:
+            news_content = soup.find(class_='MainContentWrapper-s89gjf-14').text
+            news_content = shap_text(news_content)
+            result_news.append([news_content, url])
+        else:
+            logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
+    return result_news
+
+
+def newsScrapingLivedoor(urls):
+    result_news = []
+    # ニューステキストをスクレイピング
+
+    for url in urls:
+        # 403 Forbidden回避するためユーザーエージェント情報をのせる
+        headers = {
+            "User-Agent": config.HEADER
+        }
+        # レスポンスを取得
+        response = requests.get(url, headers=headers)
+        # BeautifulSoupオブジェクト生成
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # スクレイピング結果を取得
+        # テキストが存在しない場合以外の処理
+        try:
+            if soup.article.find(class_="articleBody") is not None:
+                if soup.article.find(class_="articleBody").a is not None:
+                    soup.article.find(class_="articleBody").a.decompose()
+
+                news_content = soup.article.find(class_="articleBody").text
+                news_content = shap_text(news_content)
+                result_news.append([news_content, url])
+            else:
+                logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
+        except AttributeError:
+            continue
+        # logging.warning(soup.article.find(class_="articleBody").text)
 
     return result_news
 
