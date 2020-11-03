@@ -101,7 +101,8 @@ def newsScrapingYahoo(urls):
         if soup.find(class_='article_body') is not None:
             news_content = soup.find(class_='article_body').text
             news_content = shap_text(news_content)
-            result_news.append([news_content, url])
+            if not news_content == "":
+                result_news.append([news_content, url])
         else:
             logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
 
@@ -135,10 +136,9 @@ def newsScrapingFashionsnapcom(urls):
             news_content = re.sub(r'Update【年月日追加】', '', news_content)
             news_content = re.sub(r'Update【年月日続報】', '', news_content)
             news_content = shap_text(news_content)
-
-            news_content.strip()
-
-            result_news.append([news_content, url])
+            if not news_content == "":
+                news_content.strip()
+                result_news.append([news_content, url])
         else:
             logging.warning("「{}」の記事の内容が見つかりませんでした:".format(url))
 
@@ -163,7 +163,8 @@ def newsScrapingVogue(urls):
         if soup.find(class_='MainContentWrapper-s89gjf-14') is not None:
             news_content = soup.find(class_='MainContentWrapper-s89gjf-14').text
             news_content = shap_text(news_content)
-            result_news.append([news_content, url])
+            if not news_content == "":
+                result_news.append([news_content, url])
         else:
             logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
     return result_news
@@ -192,7 +193,8 @@ def newsScrapingLivedoor(urls):
 
                 news_content = soup.article.find(class_="articleBody").text
                 news_content = shap_text(news_content)
-                result_news.append([news_content, url])
+                if not news_content == "":
+                    result_news.append([news_content, url])
             else:
                 logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
         except AttributeError:
@@ -238,7 +240,7 @@ def summary(text):
         b.append(sentence.__str__())
 
     if str(''.join(b)) == "":
-        b = ''.join(corpus)
+        b = ""
     return ''.join(b)
 
 
@@ -256,7 +258,7 @@ def shap_text(content):
     # 全角記号削除
     news_content = re.sub(r'[︰-＠]', '', news_content)
     # 半角記号削除 + 半角数字
-    news_content = re.sub(r'[!-@[-`{-~]', '', news_content)
+    news_content = re.sub(re.compile("[!-/:-@[-`{-~]"), '', news_content)
     news_content = summary(news_content)
     return news_content
 

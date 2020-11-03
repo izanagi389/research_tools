@@ -45,8 +45,8 @@ def getTweet(id, url_base, twitter):
                 text = ''.join(c for c in text if c not in emoji.UNICODE_EMOJI)
                 # 全角記号削除
                 text = re.sub(r'[︰-＠]', '', text)
-                # 半角記号削除 + 半角数字
-                text = re.sub(r'[!-@[-`{-~]', '', text)
+                # 半角記号削除
+                text = re.sub(re.compile("[!-/:-@[-`{-~]"), '', text)
                 if not len(text) <= 20:
                     writer.writerow([text, line['created_at']])  # result[0], result[1]
                 else:
