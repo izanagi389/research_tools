@@ -32,6 +32,11 @@ csvからテキストデータを取得し
 「Word2Vecモデル」「word movers distance」を用いて、二つの文章類似度を計算  
 設定は別記ファイル（今回はword2vec_config.py）に記載
 
-### maiking_histogram.py
+### maiking_graph.py
 
 csvデータから抽出した数値をヒストグラムに変換し、画像として保存する  
+
+### search_similar_word.py
+
+csvからテキストデータを取得し  
+LDAを用いてテキストデータのトピックを生成する
