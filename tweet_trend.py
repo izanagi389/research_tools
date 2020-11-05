@@ -1,16 +1,18 @@
-from config import config
-import csv  # csv読み取り
-import requests
-from requests_oauthlib import OAuth1Session  # OAuthのライブラリの読み込み
-import json
 import csv
+import requests
+import json
 import re
 import emoji
-from gensim.corpora.dictionary import Dictionary
-from gensim import corpora
 import gensim
 import MeCab
+
+from config import config
+from config import config_trend
+from requests_oauthlib import OAuth1Session
+from gensim.corpora.dictionary import Dictionary
+from gensim import corpora
 from gensim.models import LdaModel
+
 
 CK = config.CK
 CS = config.CS
@@ -19,38 +21,79 @@ AS = config.AS
 
 
 def main():
+    tweet_list = getTwitterData(
+        config_trend.KEYWORD, config_trend.LIMIT, config_trend.SUBLIST)
+
     common_texts = []
-
-    key_word = "コスメ"
-    limit = 170
-    tweet_list = getTwitterData(key_word, limit)
-
     for content in tweet_list:
         common_texts.append(tokenize(content))
 
+    result = latent_dirichlet_allocation(common_texts)
+
+    print(result)
+
+
+def getTwitterData(key_word, repeat, sub_list):
+    twitter = OAuth1Session(CK, CS, AT, AS)
+    url = "https://api.twitter.com/1.1/search/tweets.json"
+    params = {'q': key_word, 'exclude': 'retweets', 'count': '100', 'lang': 'ja',
+              'result_type': 'recent', "tweet_mode": "extended"}
+
+    list = []
+    break_flag = 0
+
+    for i in range(repeat):
+        res = twitter.get(url, params=params)
+
+        if res.status_code == 200:  # 正常通信出来た場合
+            # limit = res.headers['x-rate-limit-remaining'] if 'x-rate-limit-remaining' in res.headers else 0
+            # print("API残接続可能回数：%s" % len(limit))
+            timelines = json.loads(res.text)  # レスポンスからタイムラインリストを取得
+            for line in timelines["statuses"]:
+                text = shape_text(line['full_text'], sub_list)
+                list.append(text)
+
+            if not len(list) > 0:
+                break_flag = 1
+                break
+
+            # 終了判定
+            if break_flag == 1:
+                break
+
+        else:
+            print("Failed: %d" % res.status_code)
+            break_flag = 1
+
+    print("ツイート取得数：%s" % len(list))
+
+    return list
+
+
+def latent_dirichlet_allocation(common_texts):
     dictionary = Dictionary(common_texts)
     # LdaModelが読み込めるBoW形式に変換
     corpus = [dictionary.doc2bow(text) for text in common_texts]
 
-    num_topics = 3
+    num_topics = config_trend.COUNTTOPIC
     lda = LdaModel(corpus, num_topics=num_topics)
 
     topic_words = []
     for i in range(num_topics):
-        tt = lda.get_topic_terms(i, 20)
+        tt = lda.get_topic_terms(i, config_trend.COUNTTOPICNUM)
         topic_words.append([dictionary[pair[0]] for pair in tt])
 
     result_topic = []
-    # result_topic = result_topic.extend(topic_words)
     for topic in topic_words:
         result_topic = result_topic + topic
-    result_topic = list(dict.fromkeys(result_topic))
+    topics = list(dict.fromkeys(result_topic))
+
     result = []
-    for topic in result_topic:
+    for topic in topics:
         if not bool(re.search(r'\d', topic)):
             result.append(topic)
 
-    print(result)
+    return result
 
 
 def tokenize(text):
@@ -73,44 +116,7 @@ def tokenize(text):
     return output_words
 
 
-def getTwitterData(key_word, repeat):
-    twitter = OAuth1Session(CK, CS, AT, AS)
-    url = "https://api.twitter.com/1.1/search/tweets.json"
-    params = {'q': key_word, 'exclude': 'retweets', 'count': '100', 'lang': 'ja',
-              'result_type': 'recent', "tweet_mode": "extended"}
-
-    list = []
-    break_flag = 0
-
-    for i in range(repeat):
-        res = twitter.get(url, params=params)
-
-        if res.status_code == 200:  # 正常通信出来た場合
-            # limit = res.headers['x-rate-limit-remaining'] if 'x-rate-limit-remaining' in res.headers else 0
-            # print("API残接続可能回数：%s" % len(limit))
-            timelines = json.loads(res.text)  # レスポンスからタイムラインリストを取得
-            for line in timelines["statuses"]:
-                text = shape_text(line['full_text'])
-                list.append(text)
-
-            if not len(list) > 0:
-                break_flag = 1
-                break
-
-            # 終了判定
-            if break_flag == 1:
-                break
-
-        else:
-            print("Failed: %d" % res.status_code)
-            break_flag = 1
-
-    print("ツイート取得数：%s" % len(list))
-
-    return list
-
-
-def shape_text(line):
+def shape_text(line, list):
     text = "".join(line.splitlines())
     text = re.sub(r'[^ ]+\.[^ ]+', '', text)
     # 絵文字を削除
@@ -119,6 +125,8 @@ def shape_text(line):
     text = re.sub(r'[︰-＠]', '', text)
     # 半角記号削除
     text = re.sub(re.compile("[!-/:-@[-`{-~]"), '', text)
+    for sub_text in list:
+        text = re.sub(sub_text, '', text)
 
     return text
 
