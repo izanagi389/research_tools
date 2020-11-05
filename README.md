@@ -36,7 +36,12 @@ csvからテキストデータを取得し
 
 csvデータから抽出した数値をヒストグラムに変換し、画像として保存する  
 
-### search_similar_word.py
+### news_trend.py
 
 csvからテキストデータを取得し  
 LDAを用いてテキストデータのトピックを生成する
+
+### tweet_trend.py
+
+TwitterAPIより、キーワード検索したツイートより「LDA」を用いて  
+トピックを作成する
