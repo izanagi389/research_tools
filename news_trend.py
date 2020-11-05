@@ -5,12 +5,12 @@ import MeCab
 import csv
 from gensim.models import LdaModel
 import re
-import config
+from config import config
 
 
 def main():
     common_texts = []
-    news_contents = get_csv_text(config.NEWSPATH)
+    news_contents = get_csv_text(config.NEWSPATH + config.NEWSNAME + ".csv")
     for content in news_contents:
         common_texts.append(tokenize(content))
 
