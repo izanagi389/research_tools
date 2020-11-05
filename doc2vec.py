@@ -7,6 +7,7 @@ import re
 import csv
 import numpy as np
 import pandas as pd
+from config import config
 
 from config import doc2vec_config
 
@@ -18,12 +19,12 @@ model = Doc2Vec.load(model_path)
 
 def main():
     # ニューステキストをリストに格納
-    news_name = doc2vec_config.NEWSNAME
-    news_csv_path = doc2vec_config.NEWSPATH + news_name + ".csv"
+    news_name = config.NEWSNAME
+    news_csv_path = config.NEWSPATH + news_name + ".csv"
     news_list = shap_text(news_csv_path)
 
     # 分析対象アカウントツイートをリストに格納
-    names = doc2vec_config.NAMES
+    names = config.NAMES
     # csvファイルの初期化（カラム作成）
     df_initialize = pd.DataFrame(
         columns=["アカウント名", "コサイン類似度平均", "コサイン類似度標準偏差", "コサイン類似度分散", "最大値", "最小値"])
@@ -93,7 +94,7 @@ def actDoc2vec(name, tweet_list, news_list):
 
     # 結果をcsvに保存
     df_result = pd.DataFrame(result, columns=["コサイン類似度", "ニュース記事", "ツイート"])
-    df_result.to_csv(doc2vec_config.SAVEPATH + name + ".csv", mode="w", index=None)
+    df_result.round(4).to_csv(doc2vec_config.SAVEPATH + name + ".csv", mode="w", index=None)
 
     # 分散・標準偏差・最大値などをcsvに保存
     a = np.array(sim_value_sum)
@@ -110,7 +111,8 @@ def actDoc2vec(name, tweet_list, news_list):
                                    np.round(num_max, decimals=4),
                                    np.round(num_min, decimals=4)]],)
 
-    df_result_num.to_csv(doc2vec_config.SAVEPATH + "result.csv", mode="a", header=None, index=None)
+    df_result_num.round(4).to_csv(doc2vec_config.SAVEPATH +
+                                  "result.csv", mode="a", header=None, index=None)
 
     print(name + " create OK!")
 

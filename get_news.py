@@ -245,7 +245,8 @@ def summary(text):
 
 
 def shap_text(content):
-    news_content = re.sub(r'　', '', content)
+    news_content = summary(content)
+    news_content = re.sub(r'　', '', news_content)
     news_content = re.sub(r' ', '', news_content)
     # 文字の整形（改行削除）
     news_content = "".join(news_content.splitlines())
@@ -259,7 +260,6 @@ def shap_text(content):
     news_content = re.sub(r'[︰-＠]', '', news_content)
     # 半角記号削除 + 半角数字
     news_content = re.sub(re.compile("[!-/:-@[-`{-~]"), '', news_content)
-    news_content = summary(news_content)
     return news_content
 
 

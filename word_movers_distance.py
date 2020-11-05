@@ -3,33 +3,37 @@ import MeCab
 # 絵文字管理ライブラリ
 import emoji
 import re
-#ファイル取得に利用
+# ファイル取得に利用
 import csv
 import numpy as np
 import pandas as pd
 
 from config import word2vec_config
+from config import config
 
 # Wikipediaモデル読み込み
 model_path = word2vec_config.MODELPATH
 model = Word2Vec.load(model_path)
 
+
 def main():
     # ニューステキストをリストに格納
-    news_name = word2vec_config.NEWSNAME
-    news_csv_path = word2vec_config.NEWSPATH + news_name + ".csv"
+    news_name = config.NEWSNAME
+    news_csv_path = config.NEWSPATH + news_name + ".csv"
     news_list = shap_text(news_csv_path)
     # 分析対象アカウントツイートをリストに格納
-    names = word2vec_config.NAMES
+    names = config.NAMES
     # csvファイルの初期化（カラム作成）
-    df_initialize = pd.DataFrame(columns=["アカウント名", "WMD類似度平均", "WMD類似度標準偏差", "WMD類似度分散", "最大値", "最小値"])
+    df_initialize = pd.DataFrame(
+        columns=["アカウント名", "WMD類似度平均", "WMD類似度標準偏差", "WMD類似度分散", "最大値", "最小値"])
     df_initialize.to_csv(word2vec_config.SAVEPATH + "result.csv", mode="w", index=None)
 
     # 実装処理
     for name in names:
-        tweet_csv_path = "./data/csv/" + name +".csv"
+        tweet_csv_path = "./data/csv/" + name + ".csv"
         tweet_list = shap_text(tweet_csv_path)
         actWord2vec(name, tweet_list, news_list)
+
 
 def tokenize(text):
     # MeCabでの形態素解析
@@ -46,10 +50,11 @@ def tokenize(text):
 
     return corpus
 
+
 def shap_text(path):
     list = []
     file = path
-    with open(file , 'r') as f:
+    with open(file, 'r') as f:
         # カラムの値を抽出（ツイート内容）
         for row in csv.reader(f):
             # テキストを整形
@@ -59,6 +64,7 @@ def shap_text(path):
                 list.append(tokenize(text))
 
         return list
+
 
 def actWord2vec(name, tweet_list, news_list):
 
@@ -79,11 +85,12 @@ def actWord2vec(name, tweet_list, news_list):
 
                 sim_value_sum.append(np.round(sim_value, decimals=4))
 
-                result.append([np.round(sim_value, decimals=4), ''.join(news_str), ''.join(tweet_str)])
+                result.append([np.round(sim_value, decimals=4),
+                               ''.join(news_str), ''.join(tweet_str)])
 
     # 結果をcsvに保存
-    df_result = pd.DataFrame(result, columns=["WMD類似度","ニュース記事","ツイート"])
-    df_result.to_csv(word2vec_config.SAVEPATH + name +".csv", mode="w", index=None)
+    df_result = pd.DataFrame(result, columns=["WMD類似度", "ニュース記事", "ツイート"])
+    df_result.to_csv(word2vec_config.SAVEPATH + name + ".csv", mode="w", index=None)
 
     # 分散・標準偏差・最大値などをcsvに保存
     a = np.array(sim_value_sum)
@@ -94,7 +101,9 @@ def actWord2vec(name, tweet_list, news_list):
                                    np.round(np.var(a), decimals=4),
                                    np.round(np.max(a), decimals=4), np.round(np.min(a), decimals=4)]],)
 
-    df_result_num.to_csv(word2vec_config.SAVEPATH + "result.csv", mode="a", header=None, index=None)
+    df_result_num.round(4).to_csv(word2vec_config.SAVEPATH +
+                                  "result.csv", mode="a", header=None, index=None)
     print(name + " create OK!")
+
 
 main()
