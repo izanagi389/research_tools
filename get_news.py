@@ -51,8 +51,16 @@ def main():
     result_news_vogue_list = newsScrapingVogue(url_list_vogue)
     result_news_livedoor_list = newsScrapingLivedoor(url_list_livedoor)
 
-    save_list = result_news_fashionsnapcom_list + result_news_yahoo_list + \
-        result_news_vogue_list + result_news_livedoor_list
+    # ニュースの選別
+    save_list = []
+    save_list = save_list + select_news(result_news_fashionsnapcom_list)
+    save_list = save_list + select_news(result_news_yahoo_list)
+    save_list = save_list + select_news(result_news_vogue_list)
+    save_list = save_list + select_news(result_news_livedoor_list)
+    print(save_list)
+
+    # save_list = result_news_fashionsnapcom_list + result_news_yahoo_list + \
+    #     result_news_vogue_list + result_news_livedoor_list
 
     # 結果の保存
     save_result_csv(result_news_fashionsnapcom_list, "fashionsnapcom_news")
@@ -261,6 +269,24 @@ def shap_text(content):
     # 半角記号削除 + 半角数字
     news_content = re.sub(re.compile("[!-/:-@[-`{-~]"), '', news_content)
     return news_content
+
+
+def select_news(news_list):
+
+    result_list = []
+    df = pd.read_csv('data/csv/trend/tweet_result.csv', sep=',',
+                     encoding='utf-8', index_col=False, header=None)
+    trend_list = list(df[0])
+    for news in news_list:
+        num_list = []
+        for trend in trend_list:
+            num_list.append(news[0].count(trend))
+
+        print(sum(num_list))
+        if sum(num_list) > 0:
+            result_list.append(news)
+
+    return result_list
 
 
 main()

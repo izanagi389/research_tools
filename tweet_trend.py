@@ -5,6 +5,7 @@ import re
 import emoji
 import gensim
 import MeCab
+import pandas as pd
 
 from config import config
 from config import config_trend
@@ -29,7 +30,8 @@ def main():
         common_texts.append(tokenize(content))
 
     result = latent_dirichlet_allocation(common_texts)
-
+    df = pd.DataFrame(result)
+    df.to_csv('data/csv/trend/tweet_result.csv', header=None, index=None)
     print(result)
 
 
@@ -39,21 +41,27 @@ def getTwitterData(key_word, repeat, sub_list):
     params = {'q': key_word, 'exclude': 'retweets', 'count': '100', 'lang': 'ja',
               'result_type': 'recent', "tweet_mode": "extended"}
 
-    list = []
+    result_list = []
     break_flag = 0
-
+    mid = -1
     for i in range(repeat):
+        params['max_id'] = mid  # midよりも古いIDのツイートのみを取得する
         res = twitter.get(url, params=params)
 
         if res.status_code == 200:  # 正常通信出来た場合
             # limit = res.headers['x-rate-limit-remaining'] if 'x-rate-limit-remaining' in res.headers else 0
             # print("API残接続可能回数：%s" % len(limit))
+            tweet_ids = []
             timelines = json.loads(res.text)  # レスポンスからタイムラインリストを取得
-            for line in timelines["statuses"]:
+            for line in timelines['statuses']:
+                tweet_ids.append(int(line['id']))
                 text = shape_text(line['full_text'], sub_list)
-                list.append(text)
+                result_list.append(text)
 
-            if not len(list) > 0:
+            if len(tweet_ids) > 0:
+                min_tweet_id = min(tweet_ids)
+                mid = min_tweet_id - 1
+            else:
                 break_flag = 1
                 break
 
@@ -65,9 +73,9 @@ def getTwitterData(key_word, repeat, sub_list):
             print("Failed: %d" % res.status_code)
             break_flag = 1
 
-    print("ツイート取得数：%s" % len(list))
+    print("ツイート取得数：%s" % len(list(set(result_list))))
 
-    return list
+    return list(set(result_list))
 
 
 def latent_dirichlet_allocation(common_texts):
@@ -111,12 +119,18 @@ def tokenize(text):
             slice = pos.split(",")
             if len(word) > 2:
                 if slice[0] == "名詞":
-                    output_words.append(word)
+                    if slice[1] == "固有名詞":
+                        if slice[2] == "人名":
+                            continue
+                        elif slice[2] == "形容動詞語幹":
+                            continue
+                        else:
+                            output_words.append(word)
 
     return output_words
 
 
-def shape_text(line, list):
+def shape_text(line, result_list):
     text = "".join(line.splitlines())
     text = re.sub(r'[^ ]+\.[^ ]+', '', text)
     # 絵文字を削除
@@ -125,7 +139,7 @@ def shape_text(line, list):
     text = re.sub(r'[︰-＠]', '', text)
     # 半角記号削除
     text = re.sub(re.compile("[!-/:-@[-`{-~]"), '', text)
-    for sub_text in list:
+    for sub_text in result_list:
         text = re.sub(sub_text, '', text)
 
     return text
