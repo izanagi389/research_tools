@@ -1,45 +1,45 @@
 from gensim.models.doc2vec import Doc2Vec
 import MeCab
-# 絵文字管理ライブラリ
 import emoji
 import re
-# ファイル取得に利用
 import csv
 import numpy as np
 import pandas as pd
+import glob
+import logging
 from config import config
 
-from config import doc2vec_config
 
-
-# Wikipediaモデル読み込み
-model_path = doc2vec_config.MODELPATH
+model_path = config.doc2vec_config.MODELPATH
 model = Doc2Vec.load(model_path)
 
 
 def main():
+    formatter = '%(levelname)s/%(asctime)s/%(filename)s(%(lineno)s)/%(message)s '
+    logging.basicConfig(format=formatter)
     # ニューステキストをリストに格納
-    news_name = config.NEWSNAME
-    news_csv_path = config.NEWSPATH + news_name + ".csv"
+    news_name = config.config_news.NEWSNAME
+    news_csv_path = config.config_news.NEWSPATH + news_name + ".csv"
     news_list = shap_text(news_csv_path)
 
     # 分析対象アカウントツイートをリストに格納
-    names = config.NAMES
+    tweet_csv_path_list = glob.glob(config.config_tweet.SAVEPATH + "*.csv")
     # csvファイルの初期化（カラム作成）
     df_initialize = pd.DataFrame(
         columns=["アカウント名", "コサイン類似度平均", "コサイン類似度標準偏差", "コサイン類似度分散", "最大値", "最小値"])
-    df_initialize.to_csv(doc2vec_config.SAVEPATH + "result.csv", mode="w", index=None)
+    df_initialize.to_csv(config.doc2vec_config.SAVEPATH +
+                         config.doc2vec_config.SAVEFILENAME, mode="w", index=None)
 
     # 実装処理
-    for name in names:
-        tweet_csv_path = "./data/csv/" + name + ".csv"
-        tweet_list = shap_text(tweet_csv_path)
-        actDoc2vec(name, tweet_list, news_list)
+    for tweet_csv_path in tweet_csv_path_list:
+        if not shap_text(tweet_csv_path):
+            actDoc2vec(name, tweet_list, news_list)
+        else:
+            logging.warning("「{}」は値が格納されていません！".format(tweet_csv_path))
 
 
 def tokenize(text):
-    # MeCabでの形態素解析
-    tagger = MeCab.Tagger('-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd')
+    tagger = MeCab.Tagger(config.NEOLOGDPATH)
 
     key = tagger.parse(text)
     corpus = []
@@ -94,7 +94,8 @@ def actDoc2vec(name, tweet_list, news_list):
 
     # 結果をcsvに保存
     df_result = pd.DataFrame(result, columns=["コサイン類似度", "ニュース記事", "ツイート"])
-    df_result.round(4).to_csv(doc2vec_config.SAVEPATH + name + ".csv", mode="w", index=None)
+    df_result.round(4).to_csv(config.doc2vec_config.SAVEPATH +
+                              name + ".csv", mode="w", index=None)
 
     # 分散・標準偏差・最大値などをcsvに保存
     a = np.array(sim_value_sum)
@@ -111,8 +112,8 @@ def actDoc2vec(name, tweet_list, news_list):
                                    np.round(num_max, decimals=4),
                                    np.round(num_min, decimals=4)]],)
 
-    df_result_num.round(4).to_csv(doc2vec_config.SAVEPATH +
-                                  "result.csv", mode="a", header=None, index=None)
+    df_result_num.round(4).to_csv(config.doc2vec_config.SAVEPATH +
+                                  config.doc2vec_config.SAVEFILENAME, mode="a", header=None, index=None)
 
     print(name + " create OK!")
 

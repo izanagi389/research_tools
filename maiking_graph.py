@@ -9,7 +9,7 @@ import re
 from matplotlib.font_manager import FontProperties
 import os
 import shutil
-from config import making_graph_config
+from config import config
 
 
 def main():

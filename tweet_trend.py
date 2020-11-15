@@ -31,7 +31,7 @@ def main():
 
     result = latent_dirichlet_allocation(common_texts)
     df = pd.DataFrame(result)
-    df.to_csv('data/csv/trend/tweet_result.csv', header=None, index=None)
+    df.to_csv(config_trend.SAVEPATH + config_trend.SAVEFILENAME', header=None, index=None)
     print(result)
 
 
@@ -105,8 +105,7 @@ def latent_dirichlet_allocation(common_texts):
 
 
 def tokenize(text):
-    # MeCabでの形態素解析
-    tagger = MeCab.Tagger('-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd')
+    tagger = MeCab.Tagger(config.NEOLOGDPATH)
 
     key = tagger.parse(text)
     output_words = []
