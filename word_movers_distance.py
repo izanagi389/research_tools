@@ -7,31 +7,30 @@ import re
 import csv
 import numpy as np
 import pandas as pd
+import glob
 
-from config import word2vec_config
 from config import config
 
 # Wikipediaモデル読み込み
-model_path = word2vec_config.MODELPATH
+model_path = config.word2vec_config.MODELPATH
 model = Word2Vec.load(model_path)
 
 
 def main():
     # ニューステキストをリストに格納
-    news_name = config.NEWSNAME
-    news_csv_path = config.NEWSPATH + news_name + ".csv"
+    news_name = config.config_news.NEWSNAME
+    news_csv_path = config.config_news.NEWSPATH + news_name + ".csv"
     news_list = shap_text(news_csv_path)
-    # 分析対象アカウントツイートをリストに格納
-    names = config.NAMES
     # csvファイルの初期化（カラム作成）
     df_initialize = pd.DataFrame(
         columns=["アカウント名", "WMD類似度平均", "WMD類似度標準偏差", "WMD類似度分散", "最大値", "最小値"])
-    df_initialize.to_csv(word2vec_config.SAVEPATH + "result.csv", mode="w", index=None)
+    df_initialize.to_csv(config.word2vec_config.SAVEPATH + "result.csv", mode="w", index=None)
 
     # 実装処理
-    for name in names:
-        tweet_csv_path = "./data/csv/" + name + ".csv"
-        tweet_list = shap_text(tweet_csv_path)
+    tweet_csv_path = glob.glob(config.config_tweet.SAVEPATH + "*.csv")
+    for path in tweet_csv_path:
+        tweet_list = shap_text(path)
+        name = path.split('/')[-1]
         actWord2vec(name, tweet_list, news_list)
 
 
@@ -72,7 +71,6 @@ def actWord2vec(name, tweet_list, news_list):
     sim_value_sum = []
     # csvに書き込む２次元配列
     result = []
-
     for tweet_str in tweet_list:
         # から文字（NULL）削除
         if not (len(tweet_str) == 0):
@@ -90,7 +88,7 @@ def actWord2vec(name, tweet_list, news_list):
 
     # 結果をcsvに保存
     df_result = pd.DataFrame(result, columns=["WMD類似度", "ニュース記事", "ツイート"])
-    df_result.to_csv(word2vec_config.SAVEPATH + name + ".csv", mode="w", index=None)
+    df_result.to_csv(config.word2vec_config.SAVEPATH + name + ".csv", mode="w", index=None)
 
     # 分散・標準偏差・最大値などをcsvに保存
     a = np.array(sim_value_sum)
@@ -101,7 +99,7 @@ def actWord2vec(name, tweet_list, news_list):
                                    np.round(np.var(a), decimals=4),
                                    np.round(np.max(a), decimals=4), np.round(np.min(a), decimals=4)]],)
 
-    df_result_num.round(4).to_csv(word2vec_config.SAVEPATH +
+    df_result_num.round(4).to_csv(config.word2vec_config.SAVEPATH +
                                   "result.csv", mode="a", header=None, index=None)
     print(name + " create OK!")
 

@@ -8,22 +8,21 @@ import MeCab
 import pandas as pd
 
 from config import config
-from config import config_trend
 from requests_oauthlib import OAuth1Session
 from gensim.corpora.dictionary import Dictionary
 from gensim import corpora
 from gensim.models import LdaModel
 
 
-CK = config.CK
-CS = config.CS
-AT = config.AT
-AS = config.AS
+CK = config.config_tweet.CK
+CS = config.config_tweet.CS
+AT = config.config_tweet.AT
+AS = config.config_tweet.AS
 
 
 def main():
     tweet_list = getTwitterData(
-        config_trend.KEYWORD, config_trend.LIMIT, config_trend.SUBLIST)
+        config.config_trend.KEYWORD, config.config_trend.LIMIT, config.config_trend.SUBLIST)
 
     common_texts = []
     for content in tweet_list:
@@ -31,7 +30,8 @@ def main():
 
     result = latent_dirichlet_allocation(common_texts)
     df = pd.DataFrame(result)
-    df.to_csv(config_trend.SAVEPATH + config_trend.SAVEFILENAME', header=None, index=None)
+    df.to_csv(config.config_trend.SAVEPATH +
+              config.config_trend.SAVEFILENAME, header=None, index=None)
     print(result)
 
 
@@ -75,6 +75,7 @@ def getTwitterData(key_word, repeat, sub_list):
 
     print("ツイート取得数：%s" % len(list(set(result_list))))
 
+    df = pd.DataFrame(list(set(result_list)), columns=["ツイート"], index=None)
     return list(set(result_list))
 
 
@@ -83,12 +84,12 @@ def latent_dirichlet_allocation(common_texts):
     # LdaModelが読み込めるBoW形式に変換
     corpus = [dictionary.doc2bow(text) for text in common_texts]
 
-    num_topics = config_trend.COUNTTOPIC
+    num_topics = config.config_trend.COUNTTOPIC
     lda = LdaModel(corpus, num_topics=num_topics)
 
     topic_words = []
     for i in range(num_topics):
-        tt = lda.get_topic_terms(i, config_trend.COUNTTOPICNUM)
+        tt = lda.get_topic_terms(i, config.config_trend.COUNTTOPICNUM)
         topic_words.append([dictionary[pair[0]] for pair in tt])
 
     result_topic = []
@@ -122,6 +123,8 @@ def tokenize(text):
                         if slice[2] == "人名":
                             continue
                         elif slice[2] == "形容動詞語幹":
+                            continue
+                        elif slice[2] == "組織":
                             continue
                         else:
                             output_words.append(word)
