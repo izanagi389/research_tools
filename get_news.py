@@ -49,9 +49,30 @@ def main():
     API_KEY = config.config_news.news_api
     count = "100"
     sort = "publishedAt"
-    domains = ["fashionsnap.com", "yahoo.co.jp", "vogue.co.jp", "livedoor.com"]
+
+    domains = config.config_news.DOMAINS
+
+    # test_get_url(API_KEY, count, sort, domains)
 
     execute(API_KEY, count, sort, domains)
+
+
+def test_get_url(API_KEY, count, sort, domains):
+    url = "https://newsapi.org/v2/everything?" + "pageSize=" + count + "&q=" + \
+        "ビジネス" + "&sortBy=" + sort + '&apiKey=' + API_KEY
+    news_url = []
+    response = requests.get(url)
+    json_data = json.loads(response.text)
+
+    if json_data['status'] == "ok":
+        for data in json_data["articles"]:
+            if not (("collection" in data["url"]) or ("streetstyle" in data["url"])):
+                news_url.append(data["url"])
+    else:
+        logging.warning(
+            "ニュースをリクエストできませんでした：「{}」".format(json_data['status']))
+    df = pd.DataFrame(news_url)
+    df.to_csv("news_urls.csv")
 
 
 def execute(API_KEY, count, sort, domains):
@@ -72,13 +93,14 @@ def execute(API_KEY, count, sort, domains):
     for keywords in trend_list:
         news_api_urls = create_api_url(keywords, count, sort, domains, API_KEY)
         news_url_list = get_news_url(news_api_urls)
-        loging.warning("「{}」のキーワードで以下のURLをスクレイピングします。".format(keywords))
+        logging.warning("「{}」のキーワードで以下のURLをスクレイピングします。".format(keywords))
         for url in news_url_list:
-            loging.warning("{}".format(url))
+            logging.warning("{}".format(url))
         result_news_text_list = scraping(domains, news_url_list)
 
         flag = config.config_news.FLAG
         if flag == 0:
+            logging.warning("コーパスより選別します")
             save_list += select_news_text(result_news_text_list)
         else:
             save_list += result_news_text_list
@@ -159,10 +181,111 @@ def scraping(domains, news_url_list):
                     result_list += news_scraping_vogue(url)
                 elif domain == "livedoor.com":
                     result_list += news_scraping_livedoor(url)
+                elif domain == "gizmodo.jp":
+                    result_list += news_scraping_gizmodo(url)
+                elif domain == "engadget.com":
+                    result_list += news_scraping_engadget(url)
+                elif domain == "roomie.jp":
+                    result_list += news_scraping_rootime(url)
+                elif domain == "zdnet.com":
+                    result_list += news_scraping_zdnet(url)
+                elif domain == "techcrunch.com":
+                    result_list += news_scraping_techcrunch(url)
                 else:
                     logging.warning("スクレイピングできるurlではありませんでした。：{}".format(url))
 
     return result_list
+
+
+def news_scraping_techcrunch(url):
+    result_news = []
+
+    headers = {
+        "User-Agent": config.HEADER
+    }
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    if soup.find(class_='article-entry') is not None:
+        news_content = soup.find(class_='article-entry').text
+        news_content = shap_text(news_content)
+        if not news_content == "":
+            result_news.append([news_content, url])
+            logging.warning("「{}」".format(news_content))
+        else:
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
+    else:
+        logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
+    return result_news
+
+
+def news_scraping_zdnet(url):
+    result_news = []
+
+    headers = {
+        "User-Agent": config.HEADER
+    }
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    if soup.find(class_='article-contents') is not None:
+        news_content = soup.find(class_='article-contents').text
+        news_content = shap_text(news_content)
+        if not news_content == "":
+            result_news.append([news_content, url])
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(news_content))
+        else:
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
+    else:
+        logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
+
+    return result_news
+
+
+def news_scraping_engadget(url):
+    result_news = []
+
+    headers = {
+        "User-Agent": config.HEADER
+    }
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    if soup.find(id='post-center-col') is not None:
+        news_content = soup.find(id='post-center-col').text
+        news_content = shap_text(news_content)
+        if not news_content == "":
+            result_news.append([news_content, url])
+            logging.warning("「{}」".format(news_content))
+        else:
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
+    else:
+        logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
+
+    return result_news
+
+
+def news_scraping_gizmodo(url):
+    result_news = []
+
+    headers = {
+        "User-Agent": config.HEADER
+    }
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    if soup.find(class_='p-post-content') is not None:
+        news_content = soup.find(class_='p-post-content').text
+        news_content = shap_text(news_content)
+        if not news_content == "":
+            result_news.append([news_content, url])
+            logging.warning("「{}」".format(news_content))
+        else:
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
+    else:
+        logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
+
+    return result_news
 
 
 def news_scraping_yahoo(url):
@@ -192,6 +315,9 @@ def news_scraping_yahoo(url):
         news_content = shap_text(news_content)
         if not news_content == "":
             result_news.append([news_content, url])
+            logging.warning("「{}」".format(news_content))
+        else:
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
     else:
         logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
 
@@ -233,8 +359,11 @@ def news_scraping_fashionsnapcom(url):
         if not news_content == "":
             news_content.strip()
             result_news.append([news_content, url])
+            logging.warning("「{}」".format(news_content))
+        else:
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
     else:
-        logging.warning("「{}」の記事の内容が見つかりませんでした:".format(url))
+        logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
 
     return result_news
 
@@ -268,8 +397,12 @@ def news_scraping_vogue(url):
         news_content = shap_text(news_content)
         if not news_content == "":
             result_news.append([news_content, url])
+            logging.warning("「{}」".format(news_content))
+        else:
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
     else:
         logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
+
     return result_news
 
 
@@ -305,10 +438,37 @@ def news_scraping_livedoor(url):
             news_content = shap_text(news_content)
             if not news_content == "":
                 result_news.append([news_content, url])
+                logging.warning("「{}」".format(news_content))
+            else:
+                logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
         else:
             logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
     except AttributeError:
         pass
+
+    return result_news
+
+
+def news_scraping_rootime(url):
+    result_news = []
+
+    headers = {
+        "User-Agent": config.HEADER
+    }
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    if soup.find(class_='r-article-content') is not None:
+
+        news_content = soup.find(class_='r-article-content').text
+        news_content = shap_text(news_content)
+        if not news_content == "":
+            result_news.append([news_content, url])
+            logging.warning("「{}」".format(news_content))
+        else:
+            logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
+    else:
+        logging.warning("「{}」の記事の内容が見つかりませんでした".format(url))
 
     return result_news
 
@@ -388,16 +548,18 @@ def shap_text(content):
         r'[^ ]+\.[^ ]+': URL
 
     """
-    news_content = summary(content)
-    news_content = re.sub(r'　', '', news_content)
-    news_content = re.sub(r' ', '', news_content)
-    news_content = "".join(news_content.splitlines())
+    news_content = "".join(content.splitlines())
+    news_content = re.sub(
+        r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+$,%#]+)", "", news_content)
+    news_content = re.sub(re.compile("[!-/:-@[-`{-~]"), '', news_content)
     news_content = ''.join(
         c for c in news_content if c not in emoji.UNICODE_EMOJI)
+    news_content = re.sub(r'　', '', news_content)
+    news_content = re.sub(r' ', '', news_content)
     if not len(re.sub(r'[^ ]+\.[^ ]+', '', news_content)) == 0:
         news_content = re.sub(r'[^ ]+\.[^ ]+', '', news_content)
     news_content = re.sub(r'[︰-＠]', '', news_content)
-    news_content = re.sub(re.compile("[!-/:-@[-`{-~]"), '', news_content)
+    news_content = summary(news_content)
     return news_content
 
 
