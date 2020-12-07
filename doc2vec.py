@@ -20,6 +20,7 @@ import pandas as pd
 import glob
 import logging
 from config import config
+import statistics
 
 
 model_path = config.doc2vec_config.MODELPATH
@@ -45,7 +46,7 @@ def main():
     tweet_csv_path_list = glob.glob(config.config_tweet.SAVEPATH + "*.csv")
 
     df_initialize = pd.DataFrame(
-        columns=["アカウント名", "コサイン類似度平均", "コサイン類似度標準偏差", "コサイン類似度分散",
+        columns=["アカウント名", "コサイン類似度平均", "コサイン類似度標準偏差", "コサイン類似度分散", "最頻値", "中央値",
                  "最大値", "最小値", "ツイート数", "ニュース数"])
     df_initialize.to_csv(config.doc2vec_config.SAVEPATH +
                          config.doc2vec_config.SAVEFILENAME, mode="w", index=None)
@@ -159,12 +160,16 @@ def actDoc2vec(tweet_csv_path, tweet_list, news_list):
     var = np.var(a)
     num_max = np.max(a)
     num_min = np.min(a)
+    num_mode = min(statistics.multimode(a))
+    num_median = np.median(a)
 
     name = re.sub(".csv", "", name)
     df_result_num = pd.DataFrame([[name,
                                    average,
                                    std,
                                    var,
+                                   num_mode,
+                                   num_median,
                                    num_max,
                                    num_min,
                                    tweet_num, news_num, ]],)
