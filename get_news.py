@@ -208,9 +208,10 @@ def news_scraping_techcrunch(url):
 
     if soup.find(class_='article-entry') is not None:
         news_content = soup.find(class_='article-entry').text
+        news_full_content = shap_text2(news_content)
         news_content = shap_text(news_content)
         if not news_content == "":
-            result_news.append([news_content, url])
+            result_news.append([news_content, news_full_content, url])
             logging.warning("「{}」".format(news_content))
         else:
             logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
@@ -230,10 +231,11 @@ def news_scraping_zdnet(url):
 
     if soup.find(class_='article-contents') is not None:
         news_content = soup.find(class_='article-contents').text
+        news_full_content = shap_text2(news_content)
         news_content = shap_text(news_content)
         if not news_content == "":
-            result_news.append([news_content, url])
-            logging.warning("「{}」の記事の内容を要約できませんでした".format(news_content))
+            result_news.append([news_content, news_full_content, url])
+            logging.warning("「{}」".format(news_content))
         else:
             logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
     else:
@@ -253,9 +255,10 @@ def news_scraping_engadget(url):
 
     if soup.find(id='post-center-col') is not None:
         news_content = soup.find(id='post-center-col').text
+        news_full_content = shap_text2(news_content)
         news_content = shap_text(news_content)
         if not news_content == "":
-            result_news.append([news_content, url])
+            result_news.append([news_content, news_full_content, url])
             logging.warning("「{}」".format(news_content))
         else:
             logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
@@ -276,9 +279,10 @@ def news_scraping_gizmodo(url):
 
     if soup.find(class_='p-post-content') is not None:
         news_content = soup.find(class_='p-post-content').text
+        news_full_content = shap_text2(news_content)
         news_content = shap_text(news_content)
         if not news_content == "":
-            result_news.append([news_content, url])
+            result_news.append([news_content, news_full_content, url])
             logging.warning("「{}」".format(news_content))
         else:
             logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
@@ -312,9 +316,10 @@ def news_scraping_yahoo(url):
 
     if soup.find(class_='article_body') is not None:
         news_content = soup.find(class_='article_body').text
+        news_full_content = shap_text2(news_content)
         news_content = shap_text(news_content)
         if not news_content == "":
-            result_news.append([news_content, url])
+            result_news.append([news_content, news_full_content, url])
             logging.warning("「{}」".format(news_content))
         else:
             logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
@@ -354,11 +359,10 @@ def news_scraping_fashionsnapcom(url):
         news_content = re.sub(r'全て表示する', '', news_content)
         news_content = re.sub(r'Update【年月日追加】', '', news_content)
         news_content = re.sub(r'Update【年月日続報】', '', news_content)
+        news_full_content = shap_text2(news_content)
         news_content = shap_text(news_content)
-
         if not news_content == "":
-            news_content.strip()
-            result_news.append([news_content, url])
+            result_news.append([news_content, news_full_content, url])
             logging.warning("「{}」".format(news_content))
         else:
             logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
@@ -394,9 +398,10 @@ def news_scraping_vogue(url):
     if soup.find(class_='MainContentWrapper-s89gjf-14') is not None:
         news_content = soup.find(
             class_='MainContentWrapper-s89gjf-14').text
+        news_full_content = shap_text2(news_content)
         news_content = shap_text(news_content)
         if not news_content == "":
-            result_news.append([news_content, url])
+            result_news.append([news_content, news_full_content, url])
             logging.warning("「{}」".format(news_content))
         else:
             logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
@@ -435,9 +440,10 @@ def news_scraping_livedoor(url):
                 soup.article.find(class_="articleBody").a.decompose()
 
             news_content = soup.article.find(class_="articleBody").text
+            news_full_content = shap_text2(news_content)
             news_content = shap_text(news_content)
             if not news_content == "":
-                result_news.append([news_content, url])
+                result_news.append([news_content, news_full_content, url])
                 logging.warning("「{}」".format(news_content))
             else:
                 logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
@@ -461,9 +467,10 @@ def news_scraping_rootime(url):
     if soup.find(class_='r-article-content') is not None:
 
         news_content = soup.find(class_='r-article-content').text
+        news_full_content = shap_text2(news_content)
         news_content = shap_text(news_content)
         if not news_content == "":
-            result_news.append([news_content, url])
+            result_news.append([news_content, news_full_content, url])
             logging.warning("「{}」".format(news_content))
         else:
             logging.warning("「{}」の記事の内容を要約できませんでした".format(url))
@@ -604,6 +611,37 @@ def get_unique_list(seq):
     """
     seen = []
     return [x for x in seq if x not in seen and not seen.append(x)]
+
+
+def shap_text2(content):
+    """shap_text2関数
+
+    テキストを整形（絵文字や記号の削除等）
+
+    Args:
+        content String: 整形するテキスト
+
+    Returns:
+        String: 整形されたテキスト
+    Note:
+        re.compile("[!-/:-@[-`{-~]"): 半角記号削除 + 半角数字
+        r'[︰-＠]': 全角記号
+        r'[^ ]+\.[^ ]+': URL
+
+    """
+    news_content = "".join(content.splitlines())
+    news_content = re.sub(
+        r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+$,%#]+)", "", news_content)
+    news_content = re.sub(re.compile("[!-/:-@[-`{-~]"), '', news_content)
+    news_content = ''.join(
+        c for c in news_content if c not in emoji.UNICODE_EMOJI)
+    news_content = re.sub(r'　', '', news_content)
+    news_content = re.sub(r' ', '', news_content)
+    if not len(re.sub(r'[^ ]+\.[^ ]+', '', news_content)) == 0:
+        news_content = re.sub(r'[^ ]+\.[^ ]+', '', news_content)
+    news_content = re.sub(r'[︰-＠]', '', news_content)
+    # news_content = summary(news_content)
+    return news_content
 
 
 main()
