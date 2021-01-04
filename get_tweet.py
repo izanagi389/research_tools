@@ -20,6 +20,15 @@ AS = config.config_tweet.AS
 def main():
     formatter = '%(levelname)s/%(asctime)s/%(filename)s(%(lineno)s)/%(message)s '
     logging.basicConfig(format=formatter)
+
+    # フォルダの初期化
+    try:
+        shutil.rmtree(config.config_tweet.SAVEPATH)
+    except FileNotFoundError:
+        pass
+
+    os.mkdir(config.config_tweet.SAVEPATH)
+
     twitter = OAuth1Session(CK, CS, AT, AS)  # 認証処理
     url_base = "https://api.twitter.com/1.1/statuses/user_timeline.json?tweet_mode=extended&user_id="  # タイムライン取得エンドポイント
     user_id_list = config.USER_ID_LIST

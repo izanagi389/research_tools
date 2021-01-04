@@ -21,6 +21,7 @@ import glob
 import logging
 from config import config
 import statistics
+import Levenshtein
 
 
 model_path = config.doc2vec_config.MODELPATH
@@ -42,11 +43,12 @@ def main():
 
     news_name = config.config_news.NEWSNAME
     news_csv_path = config.config_news.NEWSPATH + news_name + ".csv"
+    # news_csv_path = "test/news.csv"
     news_list = read_csv(news_csv_path)
     tweet_csv_path_list = glob.glob(config.config_tweet.SAVEPATH + "*.csv")
-
+    # tweet_csv_path_list = ["test/tweet.csv"]
     df_initialize = pd.DataFrame(
-        columns=["アカウント名", "コサイン類似度平均", "コサイン類似度標準偏差", "コサイン類似度分散", "最頻値", "中央値",
+        columns=["アカウント名", "doc2vec類似度平均", "最頻値", "中央値",
                  "最大値", "最小値", "ツイート数", "ニュース数"])
     df_initialize.to_csv(config.doc2vec_config.SAVEPATH +
                          config.doc2vec_config.SAVEFILENAME, mode="w", index=None)
@@ -63,7 +65,6 @@ def execute(tweet_csv_path_list, news_list):
         tweet_csv_path_list [String]: ツイートcsvのパスリスト
         news_list [String]: ニュース記事リスト
     """
-
     for tweet_csv_path in tweet_csv_path_list:
         tweet_list = read_csv(tweet_csv_path)
         if tweet_list:
@@ -100,7 +101,7 @@ def read_csv(path):
     """read_csv関数
     csvからテキストを取得する
 
-    Arge: path String: 形態素解析するテキスト
+    Arge: path String: 形態素解析するcsvパス
 
     Returns:
         [String]: csvから抽出したテキストリスト
@@ -131,7 +132,7 @@ def actDoc2vec(tweet_csv_path, tweet_list, news_list):
         csvファイルに保存も行なっている
 
     """
-    sim_value_sum = []
+    sim_values = []
     result = []
     tweet_num = len(tweet_list)
     news_num = len(news_list)
@@ -139,25 +140,20 @@ def actDoc2vec(tweet_csv_path, tweet_list, news_list):
     for tweet_str in tweet_list:
         if not (len(tweet_str) == 0):
             for news_str in news_list:
+                # doc2vec
                 sim_value = model.docvecs.similarity_unseen_docs(
                     model, news_str, tweet_str, alpha=1, min_alpha=0.0001, steps=5)
-                if sim_value < 0:
-                    sim_value *= -1
+                sim_values.append(sim_value)
 
-                sim_value_sum.append(sim_value)
-
-                result.append([sim_value,
-                               ''.join(news_str), ''.join(tweet_str)])
+                result.append([sim_value, ''.join(news_str), ''.join(tweet_str)])
 
     name = tweet_csv_path.split('/')[-1]
-    df_result = pd.DataFrame(result, columns=["コサイン類似度", "ニュース記事", "ツイート"])
+    df_result = pd.DataFrame(
+        result, columns=["doc2vec類似度", "ニュース記事", "ツイート"])
     df_result.round(4).to_csv(config.doc2vec_config.SAVEPATH +
                               name, mode="w", index=None)
-
-    a = np.array(sim_value_sum)
+    a = np.array(sim_values)
     average = np.average(a)
-    std = np.std(a)
-    var = np.var(a)
     num_max = np.max(a)
     num_min = np.min(a)
     num_mode = min(statistics.multimode(a))
@@ -166,13 +162,11 @@ def actDoc2vec(tweet_csv_path, tweet_list, news_list):
     name = re.sub(".csv", "", name)
     df_result_num = pd.DataFrame([[name,
                                    average,
-                                   std,
-                                   var,
                                    num_mode,
                                    num_median,
                                    num_max,
                                    num_min,
-                                   tweet_num, news_num, ]],)
+                                   tweet_num, news_num]],)
 
     df_result_num.round(4).to_csv(config.doc2vec_config.SAVEPATH +
                                   config.doc2vec_config.SAVEFILENAME, mode="a", header=None, index=None)

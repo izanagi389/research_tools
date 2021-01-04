@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 """doc2vec.py
 
      * 「gensim.models.doc2vec」を利用し、
